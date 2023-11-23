@@ -16,6 +16,8 @@
  *******************************************************************************/
 package org.eclipse.compare.internal;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -300,14 +302,14 @@ public class MergeSourceViewer implements ISelectionChangedListener,
 			}
 
 			StyledText widget= MergeSourceViewer.this.getSourceViewer().getTextWidget();
-			widget.setRedraw(false);
-			adjustHighlightRange(revealStart, revealLength);
-			MergeSourceViewer.this.getSourceViewer().revealRange(revealStart, revealLength);
+			executeWithRedrawDisabled(widget, () -> {
+				adjustHighlightRange(revealStart, revealLength);
+				MergeSourceViewer.this.getSourceViewer().revealRange(revealStart, revealLength);
 
-			MergeSourceViewer.this.getSourceViewer().setSelectedRange(selectionStart, selectionLength);
+				MergeSourceViewer.this.getSourceViewer().setSelectedRange(selectionStart, selectionLength);
 
-			markInNavigationHistory();
-			widget.setRedraw(true);
+				markInNavigationHistory();
+			});
 		}
 
 		private void markInNavigationHistory() {

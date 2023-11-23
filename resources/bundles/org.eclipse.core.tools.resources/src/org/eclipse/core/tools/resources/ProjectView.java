@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.core.tools.resources;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.core.resources.*;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.tools.CopyStructuredSelectionAction;
@@ -148,16 +150,13 @@ public class ProjectView extends SpyView {
 			return;
 		}
 		// turn redraw off so the UI will reflect changes only after we are done
-		viewer.getControl().setRedraw(false);
-
-		// fires viewer update
-		viewer.setInput(resource);
-
-		// shows all nodes in the resource tree
-		viewer.expandAll();
-
-		// we are done, turn redraw on
-		viewer.getControl().setRedraw(true);
+		executeWithRedrawDisabled(viewer.getControl(), () -> {
+			// fires viewer update
+			viewer.setInput(resource);
+	
+			// shows all nodes in the resource tree
+			viewer.expandAll();
+		});
 	}
 
 	/**

@@ -16,6 +16,8 @@
 package org.eclipse.debug.internal.ui.launchConfigurations;
 
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.text.MessageFormat;
 
 import org.eclipse.core.runtime.CoreException;
@@ -317,30 +319,28 @@ public class LaunchConfigurationView extends AbstractDebugView implements ILaunc
 	private void handleConfigurationAdded(ILaunchConfiguration configuration, ILaunchConfiguration from) {
 		TreeViewer viewer = getTreeViewer();
 		if (viewer != null) {
-			try {
-				viewer.getControl().setRedraw(false);
-				Object parentElement = configuration.getPrototype();
-				if (parentElement == null) {
-					parentElement = configuration.getType();
+			executeWithRedrawDisabled(viewer.getControl(), () -> {
+				try {
+					Object parentElement = configuration.getPrototype();
+					if (parentElement == null) {
+						parentElement = configuration.getType();
+					}
+					viewer.add(parentElement, configuration);
+					// if moved, remove original now
+					if (from != null) {
+						viewer.remove(from);
+					}
+					if (isAutoSelect()) {
+						viewer.setSelection(new StructuredSelection(configuration), true);
+					}
+					updateFilterLabel();
+					// Need to refresh here, bug 559758
+					if (!configuration.isLocal()) {
+						viewer.refresh(parentElement);
+					}
+				} catch (CoreException e) {
 				}
-				viewer.add(parentElement, configuration);
-				// if moved, remove original now
-				if (from != null) {
-					viewer.remove(from);
-				}
-				if (isAutoSelect()) {
-					viewer.setSelection(new StructuredSelection(configuration), true);
-				}
-				updateFilterLabel();
-				// Need to refresh here, bug 559758
-				if (!configuration.isLocal()) {
-					viewer.refresh(parentElement);
-				}
-			}
-			catch (CoreException e) {}
-			finally {
-				viewer.getControl().setRedraw(true);
-			}
+			});
 		}
 	}
 

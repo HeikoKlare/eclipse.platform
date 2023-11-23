@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.team.internal.ui.synchronize.actions;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.Iterator;
 
 import org.eclipse.jface.action.Action;
@@ -42,15 +44,12 @@ public class ExpandAllAction extends Action implements ISelectionChangedListener
 		IStructuredSelection selection = tree.getStructuredSelection();
 		if(! selection.isEmpty()) {
 			Iterator elements = selection.iterator();
-			try {
-				tree.getControl().setRedraw(false);
+			executeWithRedrawDisabled(tree.getControl(), () -> {
 				while (elements.hasNext()) {
 					Object next = elements.next();
 					tree.expandToLevel(next, AbstractTreeViewer.ALL_LEVELS);
 				}
-			} finally {
-				tree.getControl().setRedraw(true);
-			}
+			});
 		}
 	}
 

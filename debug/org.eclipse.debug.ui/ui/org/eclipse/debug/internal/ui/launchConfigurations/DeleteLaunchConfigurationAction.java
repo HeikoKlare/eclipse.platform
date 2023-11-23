@@ -15,6 +15,8 @@
 package org.eclipse.debug.internal.ui.launchConfigurations;
 
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.Iterator;
 
 import org.eclipse.core.runtime.CoreException;
@@ -69,17 +71,17 @@ public class DeleteLaunchConfigurationAction extends AbstractLaunchConfiguration
 		}
 		IStructuredSelection selection = getStructuredSelection();
 
-		getViewer().getControl().setRedraw(false);
-		Iterator<?> iterator = selection.iterator();
-		while (iterator.hasNext()) {
-			ILaunchConfiguration configuration = (ILaunchConfiguration)iterator.next();
-			try {
-				configuration.delete(ILaunchConfiguration.UPDATE_PROTOTYPE_CHILDREN);
-			} catch (CoreException e) {
-				errorDialog(e);
+		executeWithRedrawDisabled(getViewer().getControl(), () -> {
+			Iterator<?> iterator = selection.iterator();
+			while (iterator.hasNext()) {
+				ILaunchConfiguration configuration = (ILaunchConfiguration) iterator.next();
+				try {
+					configuration.delete(ILaunchConfiguration.UPDATE_PROTOTYPE_CHILDREN);
+				} catch (CoreException e) {
+					errorDialog(e);
+				}
 			}
-		}
-		getViewer().getControl().setRedraw(true);
+		});
 	}
 
 	/**

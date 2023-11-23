@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.ui.internal.intro.impl.presentations;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.core.runtime.IRegistryChangeEvent;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.Separator;
@@ -426,10 +428,10 @@ public class FormIntroPartImplementation extends
 					// Set current page, and this will triger regen.
 					CustomizableIntroPart currentIntroPart = (CustomizableIntroPart) IntroPlugin
 						.getIntro();
-					currentIntroPart.getControl().setRedraw(false);
-					success = getModel().setCurrentPageId(
-						history.getCurrentLocationAsPage().getId());
-					currentIntroPart.getControl().setRedraw(true);
+					success = executeWithRedrawDisabled(currentIntroPart.getControl(), () -> {
+						return getModel().setCurrentPageId(
+								history.getCurrentLocationAsPage().getId());
+					});
 				}
 			}
 		}
@@ -453,10 +455,10 @@ public class FormIntroPartImplementation extends
 					// Set current page, and this will triger regen.
 					CustomizableIntroPart currentIntroPart = (CustomizableIntroPart) IntroPlugin
 						.getIntro();
-					currentIntroPart.getControl().setRedraw(false);
-					success = getModel().setCurrentPageId(
-						history.getCurrentLocationAsPage().getId());
-					currentIntroPart.getControl().setRedraw(true);
+					success = executeWithRedrawDisabled(currentIntroPart.getControl(), () -> {
+						return getModel().setCurrentPageId(
+								history.getCurrentLocationAsPage().getId());
+					});
 				}
 			}
 		}
@@ -470,12 +472,11 @@ public class FormIntroPartImplementation extends
 		if (getModel().isDynamic()) {
 			CustomizableIntroPart currentIntroPart = (CustomizableIntroPart) IntroPlugin
 				.getIntro();
-			currentIntroPart.getControl().setRedraw(false);
-			boolean success = false;
-			success = getModel().setCurrentPageId(homePage.getId());
-			updateHistory(homePage);
-			currentIntroPart.getControl().setRedraw(true);
-			return success;
+			return executeWithRedrawDisabled(currentIntroPart.getControl(), () -> {
+				boolean success = getModel().setCurrentPageId(homePage.getId());
+				updateHistory(homePage);
+				return success;
+			});
 		}
 		// static model. Nothing to do.
 		return false;

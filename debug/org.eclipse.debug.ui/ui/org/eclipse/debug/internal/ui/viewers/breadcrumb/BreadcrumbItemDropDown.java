@@ -14,6 +14,8 @@
  *******************************************************************************/
 package org.eclipse.debug.internal.ui.viewers.breadcrumb;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.debug.internal.ui.DebugUIPlugin;
 import org.eclipse.jface.action.Action;
@@ -543,28 +545,28 @@ class BreadcrumbItemDropDown implements IBreadcrumbDropDownSite {
 		}
 
 		if (newHeight != fCurrentHeight || newWidth != fCurrentWidth) {
-			shell.setRedraw(false);
-			try {
-				fIsResizingProgrammatically= true;
-				shell.setSize(newWidth, newHeight);
-				fCurrentWidth = newWidth;
-				fCurrentHeight = newHeight;
+			executeWithRedrawDisabled(shell, () -> {
+				try {
+					fIsResizingProgrammatically = true;
+					shell.setSize(newWidth, newHeight);
+					fCurrentWidth = newWidth;
+					fCurrentHeight = newHeight;
 
-				Point location = shell.getLocation();
-				Point newLocation = location;
-				if (!isLeft()) {
-					newLocation = new Point(newLocation.x - (newWidth - fCurrentWidth), newLocation.y);
+					Point location = shell.getLocation();
+					Point newLocation = location;
+					if (!isLeft()) {
+						newLocation = new Point(newLocation.x - (newWidth - fCurrentWidth), newLocation.y);
+					}
+					if (!isTop()) {
+						newLocation = new Point(newLocation.x, newLocation.y - (newHeight - fCurrentHeight));
+					}
+					if (!location.equals(newLocation)) {
+						shell.setLocation(newLocation.x, newLocation.y);
+					}
+				} finally {
+					fIsResizingProgrammatically = false;
 				}
-				if (!isTop()) {
-					newLocation = new Point(newLocation.x, newLocation.y - (newHeight - fCurrentHeight));
-				}
-				if (!location.equals(newLocation)) {
-					shell.setLocation(newLocation.x, newLocation.y);
-				}
-			} finally {
-				fIsResizingProgrammatically= false;
-				shell.setRedraw(true);
-			}
+			});
 		}
 	}
 

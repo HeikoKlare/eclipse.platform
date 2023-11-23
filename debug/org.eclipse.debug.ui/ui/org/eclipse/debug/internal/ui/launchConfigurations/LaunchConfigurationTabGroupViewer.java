@@ -18,6 +18,8 @@
 package org.eclipse.debug.internal.ui.launchConfigurations;
 
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.lang.reflect.InvocationTargetException;
 import java.text.MessageFormat;
 import java.util.HashSet;
@@ -700,11 +702,11 @@ public class LaunchConfigurationTabGroupViewer {
 	protected void refreshTabs0(boolean refreshTabs) {
 		final boolean refresh = refreshTabs;
 		Runnable r = () -> {
-			fViewform.setRedraw(false);
-			fRefreshTabs = !refresh;
-			displayInstanceTabs(refresh);
-			refreshStatus();
-			fViewform.setRedraw(true);
+			executeWithRedrawDisabled(fViewform, () -> {
+				fRefreshTabs = !refresh;
+				displayInstanceTabs(refresh);
+				refreshStatus();
+			});
 		};
 		BusyIndicator.showWhile(getShell().getDisplay(), r);
 	}
@@ -717,31 +719,31 @@ public class LaunchConfigurationTabGroupViewer {
 	protected void inputChanged(Object input) {
 		final Object finput = input;
 		Runnable r = () -> {
-			try {
-				fViewform.setRedraw(false);
-				if (finput instanceof ILaunchConfiguration configuration) {
-					boolean refreshTabs = true;
-					if (fWorkingCopy != null
-							&& fWorkingCopy.getOriginal().equals(configuration.getWorkingCopy().getOriginal())) {
-						refreshTabs = false;
+			executeWithRedrawDisabled(fViewform, () -> {
+				try {
+					if (finput instanceof ILaunchConfiguration configuration) {
+						boolean refreshTabs = true;
+						if (fWorkingCopy != null
+								&& fWorkingCopy.getOriginal().equals(configuration.getWorkingCopy().getOriginal())) {
+							refreshTabs = false;
+						}
+						fOriginal = configuration;
+						fWorkingCopy = configuration.getWorkingCopy();
+						// Need to refresh all the time as tabs might have changed
+						displayInstanceTabs(refreshTabs);
+					} else if (finput instanceof ILaunchConfigurationType configuration) {
+						fDescription = getDescription(configuration);
+						setNoInput();
+					} else {
+						setNoInput();
 					}
-					fOriginal = configuration;
-					fWorkingCopy = configuration.getWorkingCopy();
-					// Need to refresh all the time as tabs might have changed
-					displayInstanceTabs(refreshTabs);
-				} else if (finput instanceof ILaunchConfigurationType configuration) {
-					fDescription = getDescription(configuration);
+				} catch (CoreException ce) {
+					errorDialog(ce);
 					setNoInput();
-				} else {
-					setNoInput();
+				} finally {
+					refreshStatus();
 				}
-			} catch (CoreException ce) {
-				errorDialog(ce);
-				setNoInput();
-			} finally {
-				refreshStatus();
-				fViewform.setRedraw(true);
-			}
+			});
 		};
 		BusyIndicator.showWhile(getShell().getDisplay(), r);
 	}

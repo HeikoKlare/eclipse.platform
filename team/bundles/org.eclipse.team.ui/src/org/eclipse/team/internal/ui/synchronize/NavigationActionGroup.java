@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.team.internal.ui.synchronize;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.compare.ICompareNavigator;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuManager;
@@ -51,9 +53,9 @@ public class NavigationActionGroup extends SynchronizePageActionGroup {
 				public void run() {
 					if (viewer.getControl().isDisposed() || !(viewer instanceof AbstractTreeViewer))
 						return;
-					viewer.getControl().setRedraw(false);
-					((AbstractTreeViewer)viewer).collapseToLevel(viewer.getInput(), AbstractTreeViewer.ALL_LEVELS);
-					viewer.getControl().setRedraw(true);
+					executeWithRedrawDisabled(viewer.getControl(), () -> {
+						((AbstractTreeViewer)viewer).collapseToLevel(viewer.getInput(), AbstractTreeViewer.ALL_LEVELS);
+					});
 				}
 			};
 			Utils.initAction(collapseAll, "action.collapseAll."); //$NON-NLS-1$

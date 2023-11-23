@@ -16,6 +16,8 @@
  *******************************************************************************/
 package org.eclipse.ui.internal.cheatsheets.views;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -24,6 +26,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
@@ -861,57 +864,64 @@ public class CheatSheetViewer implements ICheatSheetViewer, IMenuContributor {
 			return false;
 		}
 
-		control.setRedraw(false);
-		if (model instanceof CheatSheet) {
-			CheatSheet cheatSheetModel = (CheatSheet)model;
+		Optional<Runnable> finishedCallback = executeWithRedrawDisabled(control, () -> {
+			if (model instanceof CheatSheet) {
+				CheatSheet cheatSheetModel = (CheatSheet) model;
 
-			if (isRestricted && cheatSheetModel.isContainsCommandOrAction()) {
-				boolean isOK = MessageDialog.openConfirm(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),
-						Messages.CHEATSHEET_FROM_URL_WITH_EXEC_TITLE,
-						Messages.CHEATSHEET_FROM_URL_WITH_EXEC);
+				if (isRestricted && cheatSheetModel.isContainsCommandOrAction()) {
+					boolean isOK = MessageDialog.openConfirm(
+							PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),
+							Messages.CHEATSHEET_FROM_URL_WITH_EXEC_TITLE, Messages.CHEATSHEET_FROM_URL_WITH_EXEC);
 
-				if (!isOK) {
-					control.setRedraw(true);
-					showStartPage();
-					return true;
+					if (!isOK) {
+						return Optional.of(() -> showStartPage());
+					}
 				}
+
+				currentPage = new CheatSheetPage(cheatSheetModel, viewItemList, this);
+				setCollapseExpandButtonEnabled(true);
+			} else if (model instanceof CompositeCheatSheetModel) {
+				CompositeCheatSheetModel compositeCheatSheetModel = ((CompositeCheatSheetModel) model);
+				compositeCheatSheetModel.setId(currentID);
+				currentPage = new CompositeCheatSheetPage(compositeCheatSheetModel, stateManager);
+				compositeCheatSheetModel.setCheatSheetManager(initManager());
+				setCollapseExpandButtonEnabled(false);
 			}
+			CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", //$NON-NLS-1$
+					"Time in CheatSheetViewer.initCheatSheetView() after CheatSheetPage() call: "); //$NON-NLS-1$
+			currentPage.createPart(control);
+			CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", //$NON-NLS-1$
+					"Time in CheatSheetViewer.initCheatSheetView() after CheatSheetPage.createPart() call: "); //$NON-NLS-1$
 
-			currentPage = new CheatSheetPage(cheatSheetModel, viewItemList, this);
-			setCollapseExpandButtonEnabled(true);
-		} else if (model instanceof CompositeCheatSheetModel) {
-			CompositeCheatSheetModel compositeCheatSheetModel = ((CompositeCheatSheetModel)model);
-			compositeCheatSheetModel.setId(currentID);
-			currentPage = new CompositeCheatSheetPage(compositeCheatSheetModel, stateManager);
-			compositeCheatSheetModel.setCheatSheetManager(initManager());
-			setCollapseExpandButtonEnabled(false);
-		}
-		CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", "Time in CheatSheetViewer.initCheatSheetView() after CheatSheetPage() call: "); //$NON-NLS-1$ //$NON-NLS-2$
-		currentPage.createPart(control);
-		CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", "Time in CheatSheetViewer.initCheatSheetView() after CheatSheetPage.createPart() call: "); //$NON-NLS-1$ //$NON-NLS-2$
+			if (model instanceof CheatSheet) {
+				CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", //$NON-NLS-1$
+						"Time in CheatSheetViewer.initCheatSheetView() after fireEvent() call: "); //$NON-NLS-1$
 
-		if (model instanceof CheatSheet) {
-			CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", "Time in CheatSheetViewer.initCheatSheetView() after fireEvent() call: "); //$NON-NLS-1$ //$NON-NLS-2$
+				if (!loadState()) {
+					// An error occurred when apply the saved state data.
+					return Optional.of(() -> control.layout());
+				}
 
-			if(!loadState()) {
-				// An error occurred when apply the saved state data.
-				control.setRedraw(true);
-				control.layout();
-				return true;
+				getManager().fireEvent(ICheatSheetEvent.CHEATSHEET_OPENED);
 			}
+			CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", //$NON-NLS-1$
+					"Time in CheatSheetViewer.initCheatSheetView() after checkSavedState() call: "); //$NON-NLS-1$
 
-			getManager().fireEvent(ICheatSheetEvent.CHEATSHEET_OPENED);
+			currentPage.initialized();
+			return null;
+		});
+		if (finishedCallback.isPresent()) {
+			finishedCallback.get().run();
+		} else {
+			control.layout();
+			CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", //$NON-NLS-1$
+					"Time in CheatSheetViewer.initCheatSheetView() after layout() call: "); //$NON-NLS-1$
+
+			if (currentItem != null && !currentItem.isCompleted())
+				currentItem.setFocus();
+			CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", //$NON-NLS-1$
+					"Time in CheatSheetViewer.initCheatSheetView() at end of method: "); //$NON-NLS-1$
 		}
-		CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", "Time in CheatSheetViewer.initCheatSheetView() after checkSavedState() call: "); //$NON-NLS-1$ //$NON-NLS-2$
-
-		currentPage.initialized();
-		control.setRedraw(true);
-		control.layout();
-		CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", "Time in CheatSheetViewer.initCheatSheetView() after layout() call: "); //$NON-NLS-1$ //$NON-NLS-2$
-
-		if (currentItem != null && !currentItem.isCompleted())
-			currentItem.setFocus();
-		CheatSheetStopWatch.printLapTime("CheatSheetViewer.initCheatSheetView()", "Time in CheatSheetViewer.initCheatSheetView() at end of method: "); //$NON-NLS-1$ //$NON-NLS-2$
 		return true;
 	}
 

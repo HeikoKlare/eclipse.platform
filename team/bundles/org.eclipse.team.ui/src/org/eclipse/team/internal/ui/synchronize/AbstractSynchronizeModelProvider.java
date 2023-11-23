@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.team.internal.ui.synchronize;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -373,8 +375,7 @@ public abstract class AbstractSynchronizeModelProvider implements ISynchronizeMo
 	private void refreshModelRoot() {
 		StructuredViewer viewer = getViewer();
 		if (viewer != null && !viewer.getControl().isDisposed()) {
-			try {
-				viewer.getControl().setRedraw(false);
+			executeWithRedrawDisabled(viewer.getControl(), () ->  {
 				if (isRootProvider() || getModelRoot().getParent() == null) {
 					// Refresh the entire view
 					viewer.refresh();
@@ -387,9 +388,7 @@ public abstract class AbstractSynchronizeModelProvider implements ISynchronizeMo
 				//	restore expansion state
 				if (isRootProvider())
 					restoreViewerState();
-			} finally {
-				viewer.getControl().setRedraw(true);
-			}
+			});
 		}
 	}
 

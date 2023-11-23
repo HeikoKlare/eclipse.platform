@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.debug.internal.ui.actions;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchesListener2;
@@ -60,12 +62,7 @@ public class LaunchCollapseAllAction extends AbstractRemoveAllActionDelegate imp
 			return;
 		}
 		if (fViewer != null) {
-			try {
-				fViewer.getControl().setRedraw(false);
-				fViewer.collapseAll();
-			} finally {
-				fViewer.getControl().setRedraw(true);
-			}
+			executeWithRedrawDisabled(fViewer.getControl(), () -> fViewer.collapseAll());
 		}
 	}
 

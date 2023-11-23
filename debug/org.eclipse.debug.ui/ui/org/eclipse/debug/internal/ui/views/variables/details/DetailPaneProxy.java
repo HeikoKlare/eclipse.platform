@@ -14,6 +14,8 @@
  *******************************************************************************/
 package org.eclipse.debug.internal.ui.views.variables.details;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.text.MessageFormat;
 
 import org.eclipse.core.runtime.CoreException;
@@ -203,8 +205,7 @@ public class DetailPaneProxy implements ISaveablePart {
 	 * @param selection the selection to display
 	 */
 	private void setupPane(String paneID, IStructuredSelection selection) {
-		try {
-			fParentContainer.getParentComposite().setRedraw(false);
+		executeWithRedrawDisabled(fParentContainer.getParentComposite(), () -> {
 			if (fCurrentPane != null) {
 				fCurrentPane.dispose();
 			}
@@ -246,9 +247,7 @@ public class DetailPaneProxy implements ISaveablePart {
 				createErrorLabel(DetailMessages.DetailPaneProxy_0);
 				DebugUIPlugin.log(new CoreException(new Status(IStatus.ERROR, DebugUIPlugin.getUniqueIdentifier(), MessageFormat.format(DetailMessages.DetailPaneProxy_3, new Object[] { paneID }))));
 			}
-		} finally {
-			fParentContainer.getParentComposite().setRedraw(true);
-		}
+		});
 	}
 
 	/**

@@ -14,6 +14,8 @@
  **********************************************************************/
 package org.eclipse.core.tools.resources;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.*;
 import org.eclipse.core.resources.*;
 import org.eclipse.core.runtime.IAdaptable;
@@ -456,10 +458,10 @@ public class ResourceChangeView extends SpyView implements IResourceChangeListen
 		}
 		rootObject = event;
 		display.asyncExec(() -> {
-			viewer.getControl().setRedraw(false);
-			viewer.setInput(ResourceChangeView.this.rootObject);
-			viewer.expandAll();
-			viewer.getControl().setRedraw(true);
+			executeWithRedrawDisabled(viewer.getControl(), () -> {
+				viewer.setInput(ResourceChangeView.this.rootObject);
+				viewer.expandAll();
+			});
 		});
 	}
 }

@@ -19,6 +19,8 @@
 
 package org.eclipse.ant.internal.ui.editor;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -622,28 +624,25 @@ public class AntEditor extends TextEditor implements IReconcilingParticipant, IP
 			int length = reference.getSelectionLength();
 			int highLightLength = reference.getLength();
 
-			textWidget.setRedraw(false);
+			executeWithRedrawDisabled(textWidget, () -> {
+				if (highLightLength > 0) {
+					setHighlightRange(offset, highLightLength, moveCursor);
+				}
 
-			if (highLightLength > 0) {
-				setHighlightRange(offset, highLightLength, moveCursor);
-			}
+				if (!moveCursor) {
+					return;
+				}
 
-			if (!moveCursor) {
-				return;
-			}
-
-			if (offset > -1 && length > 0) {
-				sourceViewer.revealRange(offset, length);
-				// Selected region begins one index after offset
-				sourceViewer.setSelectedRange(offset, length);
-				markInNavigationHistory();
-			}
+				if (offset > -1 && length > 0) {
+					sourceViewer.revealRange(offset, length);
+					// Selected region begins one index after offset
+					sourceViewer.setSelectedRange(offset, length);
+					markInNavigationHistory();
+				}
+			});
 		}
 		catch (IllegalArgumentException x) {
 			AntUIPlugin.log(x);
-		}
-		finally {
-			textWidget.setRedraw(true);
 		}
 	}
 

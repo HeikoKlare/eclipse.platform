@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.debug.internal.ui.views.breakpoints;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -104,8 +106,11 @@ public class BreakpointsContentProvider implements ITreeContentProvider, IProper
 				organizer.addPropertyChangeListener(this);
 			}
 		}
-		if (!fDisposed) {
-			fViewer.getControl().setRedraw(false);
+		if (fDisposed) {
+			return;
+		}
+
+		executeWithRedrawDisabled(fViewer.getControl(), () -> {
 			// maintain expansion based on visible breakpoints
 			IBreakpoint[] breakpoints = null;
 			if (isShowingGroups()) {
@@ -126,8 +131,7 @@ public class BreakpointsContentProvider implements ITreeContentProvider, IProper
 
 				}
 			}
-			fViewer.getControl().setRedraw(true);
-		}
+		});
 	}
 
 	/**
@@ -204,9 +208,7 @@ public class BreakpointsContentProvider implements ITreeContentProvider, IProper
 			}
 			fElements = categoriesToContainers.values().toArray();
 		}
-		fViewer.getControl().setRedraw(false);
-		fViewer.refresh();
-		fViewer.getControl().setRedraw(true);
+		executeWithRedrawDisabled(fViewer.getControl(), () -> fViewer.refresh());
 	}
 
 	@Override

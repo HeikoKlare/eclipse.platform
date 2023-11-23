@@ -14,6 +14,8 @@
 
 package org.eclipse.unittest.internal.ui;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -412,13 +414,10 @@ class TestViewer {
 	 *                 otherwise - <code>false</code>
 	 */
 	public synchronized void setShowTime(boolean showTime) {
-		try {
-			fViewerbook.setRedraw(false);
+		executeWithRedrawDisabled(fViewerbook, () -> {
 			fTreeLabelProvider.setShowTime(showTime);
 			fTableLabelProvider.setShowTime(showTime);
-		} finally {
-			fViewerbook.setRedraw(true);
-		}
+		});
 	}
 
 	/**
@@ -437,8 +436,7 @@ class TestViewer {
 		 * not refreshed upfront - on layout change, new viewer is refreshed if
 		 * necessary - filter only applies to "current" layout mode / viewer
 		 */
-		try {
-			fViewerbook.setRedraw(false);
+		executeWithRedrawDisabled(fViewerbook, () -> {
 
 			IStructuredSelection selection = null;
 			boolean switchLayout = layoutMode != fLayoutMode;
@@ -492,9 +490,7 @@ class TestViewer {
 				fSelectionProvider.setSelection(flatSelection, true);
 			}
 
-		} finally {
-			fViewerbook.setRedraw(true);
-		}
+		});
 	}
 
 	private boolean getActiveViewerHasFilter() {

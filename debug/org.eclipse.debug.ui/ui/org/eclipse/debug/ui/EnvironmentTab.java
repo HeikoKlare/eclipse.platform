@@ -18,6 +18,8 @@
  *******************************************************************************/
 package org.eclipse.debug.ui;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -740,15 +742,12 @@ public class EnvironmentTab extends AbstractLaunchConfigurationTab {
 	 */
 	private void handleEnvRemoveButtonSelected() {
 		IStructuredSelection sel = environmentTable.getStructuredSelection();
-		try {
-			environmentTable.getControl().setRedraw(false);
+		executeWithRedrawDisabled(environmentTable.getControl(), () -> {
 			for (Iterator<?> i = sel.iterator(); i.hasNext();) {
 				EnvironmentVariable var = (EnvironmentVariable) i.next();
 				environmentTable.remove(var);
 			}
-		} finally {
-			environmentTable.getControl().setRedraw(true);
-		}
+		});
 		updateAppendReplace();
 		updateLaunchConfigurationDialog();
 	}

@@ -14,11 +14,12 @@
 
 package org.eclipse.ui.internal.intro.impl.model.url;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.Properties;
-
 import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.core.commands.common.CommandException;
 import org.eclipse.jface.action.Action;
@@ -439,17 +440,17 @@ public class IntroURL implements IIntroURL {
 		// avoid flicker.
 		CustomizableIntroPart currentIntroPart = (CustomizableIntroPart) IntroPlugin
 			.getIntro();
-		currentIntroPart.getControl().setRedraw(false);
 
-		IntroModelRoot modelRoot = IntroPlugin.getDefault().getIntroModelRoot();
-		boolean success = modelRoot.setCurrentPageId(pageId);
-		if (!success)
-			success = includePageToShow(modelRoot, pageId);
+		IntroModelRoot modelRoot = executeWithRedrawDisabled(currentIntroPart.getControl(), () -> {
+			IntroModelRoot introModelRoot = IntroPlugin.getDefault().getIntroModelRoot();
+			boolean success = introModelRoot.setCurrentPageId(pageId);
+			if (!success) {
+				success = includePageToShow(introModelRoot, pageId);
+			}
+			return success ? introModelRoot : null;
+		});
 
-		// we turned drawing off. Turn it on again.
-		currentIntroPart.getControl().setRedraw(true);
-
-		if (success) {
+		if (modelRoot != null) {
 			// found page. Set the history
 			modelRoot.getPresentation().updateHistory(
 				modelRoot.getCurrentPage());

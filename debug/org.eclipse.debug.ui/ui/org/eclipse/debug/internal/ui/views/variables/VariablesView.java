@@ -22,6 +22,8 @@
  *******************************************************************************/
 package org.eclipse.debug.internal.ui.views.variables;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -836,33 +838,33 @@ public class VariablesView extends AbstractDebugView implements IDebugContextLis
 	}
 
 	private void buildDetailPane(int orientation) {
-		try {
-			fDetailsAnchor.setRedraw(false);
-			if (fDetailsComposite != null) {
-				fDetailPane.dispose();
-				fDetailsComposite.dispose();
+		executeWithRedrawDisabled(fDetailsAnchor, () -> {
+			try {
+				if (fDetailsComposite != null) {
+					fDetailPane.dispose();
+					fDetailsComposite.dispose();
+				}
+				fSashForm.setOrientation(orientation);
+				if (orientation == SWT.VERTICAL) {
+					fDetailsComposite = SWTFactory.createComposite(fDetailsAnchor, fDetailsAnchor.getFont(), 1, 1, GridData.FILL_BOTH, 0, 0);
+					GridLayout layout = (GridLayout) fDetailsComposite.getLayout();
+					layout.verticalSpacing = 0;
+					fSeparator = new Label(fDetailsComposite, SWT.SEPARATOR| SWT.HORIZONTAL);
+					fSeparator.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
+				} else {
+					fDetailsComposite = SWTFactory.createComposite(fDetailsAnchor, fDetailsAnchor.getFont(), 2, 1, GridData.FILL_BOTH, 0, 0);
+					GridLayout layout = (GridLayout) fDetailsComposite.getLayout();
+					layout.horizontalSpacing = 0;
+					fSeparator= new Label(fDetailsComposite, SWT.SEPARATOR | SWT.VERTICAL);
+					fSeparator.setLayoutData(new GridData(SWT.TOP, SWT.FILL, false, true));
+				}
+				// force update so detail pane can adapt to orientation change
+				showDetailPane();
+			} finally {
+				fDetailsAnchor.layout(true);
+				fPaneBuilt = true;
 			}
-			fSashForm.setOrientation(orientation);
-			if (orientation == SWT.VERTICAL) {
-				fDetailsComposite = SWTFactory.createComposite(fDetailsAnchor, fDetailsAnchor.getFont(), 1, 1, GridData.FILL_BOTH, 0, 0);
-				GridLayout layout = (GridLayout) fDetailsComposite.getLayout();
-				layout.verticalSpacing = 0;
-				fSeparator = new Label(fDetailsComposite, SWT.SEPARATOR| SWT.HORIZONTAL);
-				fSeparator.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
-			} else {
-				fDetailsComposite = SWTFactory.createComposite(fDetailsAnchor, fDetailsAnchor.getFont(), 2, 1, GridData.FILL_BOTH, 0, 0);
-				GridLayout layout = (GridLayout) fDetailsComposite.getLayout();
-				layout.horizontalSpacing = 0;
-				fSeparator= new Label(fDetailsComposite, SWT.SEPARATOR | SWT.VERTICAL);
-				fSeparator.setLayoutData(new GridData(SWT.TOP, SWT.FILL, false, true));
-			}
-			// force update so detail pane can adapt to orientation change
-			showDetailPane();
-		} finally {
-			fDetailsAnchor.layout(true);
-			fDetailsAnchor.setRedraw(true);
-			fPaneBuilt = true;
-		}
+		});
 	}
 
 	/**

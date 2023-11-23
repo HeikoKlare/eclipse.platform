@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.team.internal.ui.synchronize;
 
+import static org.eclipse.swt.widgets.ControlUtil.executeWithRedrawDisabled;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -540,42 +542,42 @@ public class SynchronizeModelUpdateHandler extends BackgroundEventHandler implem
 	 */
 	private void internalRunViewUpdate(final Runnable runnable, boolean preserveExpansion) {
 		StructuredViewer viewer = getViewer();
-		IResource[] expanded = null;
-		IResource[] selected = null;
-		try {
-			if (Utils.canUpdateViewer(viewer)) {
-				viewer.getControl().setRedraw(false);
+
+		Runnable updateRunnable = () -> {
+			IResource[] expanded = null;
+			IResource[] selected = null;
+			try {
 				if (preserveExpansion) {
 					expanded = provider.getExpandedResources();
 					selected = provider.getSelectedResources();
 				}
-				if (viewer instanceof AbstractTreeViewer && additionsMap == null)
+				if (viewer instanceof AbstractTreeViewer && additionsMap == null) {
 					additionsMap = new HashMap<>();
-			}
-			runnable.run();
-		} finally {
-			if (Utils.canUpdateViewer(viewer)) {
-				try {
-					if (additionsMap != null && !additionsMap.isEmpty() && Utils.canUpdateViewer(viewer)) {
-						for (ISynchronizeModelElement parent : additionsMap.keySet()) {
-							if (Policy.DEBUG_SYNC_MODELS) {
-								System.out.println("Adding child view items of " + parent.getName()); //$NON-NLS-1$
-							}
-							Set<ISynchronizeModelElement> toAdd = additionsMap.get(parent);
-							((AbstractTreeViewer)viewer).add(parent, toAdd.toArray(new Object[toAdd.size()]));
+				}
+				runnable.run();
+			} finally {
+				if (additionsMap != null && !additionsMap.isEmpty() && Utils.canUpdateViewer(viewer)) {
+					for (ISynchronizeModelElement parent : additionsMap.keySet()) {
+						if (Policy.DEBUG_SYNC_MODELS) {
+							System.out.println("Adding child view items of " + parent.getName()); //$NON-NLS-1$
 						}
-						additionsMap = null;
+						Set<ISynchronizeModelElement> toAdd = additionsMap.get(parent);
+						((AbstractTreeViewer)viewer).add(parent, toAdd.toArray(new Object[toAdd.size()]));
 					}
-					if (expanded != null) {
-						provider.expandResources(expanded);
-					}
-					if (selected != null) {
-						provider.selectResources(selected);
-					}
-				} finally {
-					viewer.getControl().setRedraw(true);
+					additionsMap = null;
+				}
+				if (expanded != null) {
+					provider.expandResources(expanded);
+				}
+				if (selected != null) {
+					provider.selectResources(selected);
 				}
 			}
+		};
+		if (Utils.canUpdateViewer(viewer)) {
+			executeWithRedrawDisabled(viewer.getControl(), updateRunnable);
+		} else {
+			runnable.run();
 		}
 
 		ISynchronizeModelElement root = provider.getModelRoot();
