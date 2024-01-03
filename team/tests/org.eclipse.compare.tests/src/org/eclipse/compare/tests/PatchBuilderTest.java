@@ -35,7 +35,7 @@ import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class PatchBuilderTest {
 	@Test
