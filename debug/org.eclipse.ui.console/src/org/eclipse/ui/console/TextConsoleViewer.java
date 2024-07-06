@@ -153,16 +153,36 @@ public class TextConsoleViewer extends SourceViewer implements LineStyleListener
 		}
 	}
 
+	private boolean isDocumentEndReached() {
+		return isDocumentEndReachedWhenMovingDown(0);
+	}
+
 	/*
 	 * Checks if at the end of document
 	 */
-	private boolean checkEndOfDocument() {
+	private boolean isDocumentEndReachedWhenPressingDown() {
 		StyledText textWidget = getTextWidget();
 		if (textWidget != null && !textWidget.isDisposed()) {
-			int partialBottomIndex = JFaceTextUtil.getPartialBottomIndex(textWidget);
+			return isDocumentEndReachedWhenMovingDown(textWidget.getVerticalBar().getIncrement());
+		}
+		return false;
+	}
+
+	private boolean isDocumentEndReachedWhenPressingPageDown() {
+		StyledText textWidget = getTextWidget();
+		if (textWidget != null && !textWidget.isDisposed()) {
+			return isDocumentEndReachedWhenMovingDown(textWidget.getVerticalBar().getPageIncrement());
+		}
+		return false;
+	}
+
+	private boolean isDocumentEndReachedWhenMovingDown(int amountToMoveDown) {
+		StyledText textWidget = getTextWidget();
+		if (textWidget != null && !textWidget.isDisposed()) {
+			int lastShownLine = JFaceTextUtil.getPartialBottomIndex(textWidget);
 			int lineCount = textWidget.getLineCount();
-			int delta = textWidget.getVerticalBar().getIncrement();
-			return lineCount - partialBottomIndex < delta;
+			int lineheight = textWidget.getLineHeight();
+			return (lineCount - lastShownLine) * lineheight <= amountToMoveDown;
 		}
 		return false;
 	}
@@ -177,9 +197,13 @@ public class TextConsoleViewer extends SourceViewer implements LineStyleListener
 		}
 		StyledText textWidget = getTextWidget();
 		if (textWidget != null && !textWidget.isDisposed()) {
-			return (textWidget.getLineCount() <= textWidget.getVerticalBar().getIncrement());
+			return (textWidget.getLineCount() > getLinesPerPage(textWidget));
 		}
 		return false;
+	}
+
+	private static int getLinesPerPage(StyledText textWidget) {
+		return textWidget.getVerticalBar().getMaximum() / textWidget.getVerticalBar().getIncrement();
 	}
 
 	/*
@@ -271,12 +295,13 @@ public class TextConsoleViewer extends SourceViewer implements LineStyleListener
 					// reveal the end
 					setScrollLock(false);
 				} else if (e.detail == SWT.DRAG) {
-					if (checkEndOfDocument()) {
+					if (isDocumentEndReached()) {
 						setScrollLock(false);
 					} else {
 						setScrollLock(true);
 					}
-				} else if ((e.detail == SWT.PAGE_DOWN || e.detail == SWT.ARROW_DOWN) && checkEndOfDocument()) {
+				} else if (e.detail == SWT.PAGE_DOWN && isDocumentEndReachedWhenPressingDown()
+						|| e.detail == SWT.ARROW_DOWN && isDocumentEndReachedWhenPressingPageDown()) {
 					// unlock if Down at the end of document
 					setScrollLock(false);
 				}
@@ -296,7 +321,8 @@ public class TextConsoleViewer extends SourceViewer implements LineStyleListener
 				} else if ((e.keyCode == SWT.END && (e.stateMask & SWT.CTRL) != 0) || e.keyCode == SWT.BOTTOM) {
 					// pressing CTRL+END reveals the end
 					setScrollLock(false);
-				} else if ((e.keyCode == SWT.PAGE_DOWN || e.keyCode == SWT.ARROW_DOWN) && checkEndOfDocument()) {
+				} else if (e.keyCode == SWT.PAGE_DOWN && isDocumentEndReachedWhenPressingPageDown()
+						|| e.keyCode == SWT.ARROW_DOWN && isDocumentEndReachedWhenPressingDown()) {
 					// unlock if Down at the end of document
 					setScrollLock(false);
 				}
@@ -307,7 +333,7 @@ public class TextConsoleViewer extends SourceViewer implements LineStyleListener
 				return;
 			}
 			if (e.count < 0) { // Mouse dragged down
-				if (checkEndOfDocument()) {
+				if (isDocumentEndReachedWhenPressingPageDown()) {
 					setScrollLock(false);
 				}
 			} else if (!userHoldsScrollLock.get()) {
